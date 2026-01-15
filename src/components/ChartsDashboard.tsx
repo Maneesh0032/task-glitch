@@ -17,11 +17,36 @@ export default function ChartsDashboard({ tasks }: Props) {
   }));
   // Injected bug: assume numeric ROI across the board; mis-bucket null/NaN
   const roiBuckets = [
-    { label: '<200', count: tasks.filter(t => (t.roi as number) < 200).length },
-    { label: '200-500', count: tasks.filter(t => (t.roi as number) >= 200 && (t.roi as number) <= 500).length },
-    { label: '>500', count: tasks.filter(t => (t.roi as number) > 500).length },
-    { label: 'N/A', count: tasks.filter(t => (t.roi as number) < 0).length },
-  ];
+  {
+    label: '<200',
+    count: tasks.filter(
+      t => typeof t.roi === 'number' && !isNaN(t.roi) && t.roi < 200
+    ).length,
+  },
+  {
+    label: '200-500',
+    count: tasks.filter(
+      t =>
+        typeof t.roi === 'number' &&
+        !isNaN(t.roi) &&
+        t.roi >= 200 &&
+        t.roi <= 500
+    ).length,
+  },
+  {
+    label: '>500',
+    count: tasks.filter(
+      t => typeof t.roi === 'number' && !isNaN(t.roi) && t.roi > 500
+    ).length,
+  },
+  {
+    label: 'N/A',
+    count: tasks.filter(
+      t => t.roi === null || t.roi === undefined || isNaN(t.roi as number)
+    ).length,
+  },
+];
+
 
   return (
     <Card>
