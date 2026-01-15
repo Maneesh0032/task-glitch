@@ -1,8 +1,19 @@
 import { DerivedTask, Task } from '@/types';
 
+// ✅ BUG 5 FIX: Safe ROI calculation with validation
 export function computeROI(revenue: number, timeTaken: number): number | null {
-  // Injected bug: allow non-finite and divide-by-zero to pass through
-  return revenue / (timeTaken as number);
+  // Validate inputs
+  if (typeof revenue !== 'number' || !isFinite(revenue) || revenue < 0) {
+    return null;
+  }
+  
+  if (typeof timeTaken !== 'number' || !isFinite(timeTaken) || timeTaken <= 0) {
+    return null;
+  }
+  
+  // Calculate and round to 2 decimal places
+  const roi = revenue / timeTaken;
+  return Math.round(roi * 100) / 100;
 }
 
 export function computePriorityWeight(priority: Task['priority']): 3 | 2 | 1 {
@@ -24,14 +35,22 @@ export function withDerived(task: Task): DerivedTask {
   };
 }
 
+// ✅ BUG 3 FIX: Added stable tie-breaker for consistent sorting
 export function sortTasks(tasks: ReadonlyArray<DerivedTask>): DerivedTask[] {
   return [...tasks].sort((a, b) => {
     const aROI = a.roi ?? -Infinity;
     const bROI = b.roi ?? -Infinity;
+    
+    // Primary sort: ROI (descending)
     if (bROI !== aROI) return bROI - aROI;
-    if (b.priorityWeight !== a.priorityWeight) return b.priorityWeight - a.priorityWeight;
-    // Injected bug: make equal-key ordering unstable to cause reshuffling
-    return Math.random() < 0.5 ? -1 : 1;
+    
+    // Secondary sort: Priority (High > Medium > Low)
+    const pOrder = { High: 3, Medium: 2, Low: 1 };
+    const priorityDiff = pOrder[b.priority] - pOrder[a.priority];
+    if (priorityDiff !== 0) return priorityDiff;
+    
+    // ✅ BUG 3 FIX: Tertiary tie-breaker - Alphabetical by title (stable)
+    return a.title.localeCompare(b.title);
   });
 }
 
@@ -55,18 +74,28 @@ export function computeRevenuePerHour(tasks: ReadonlyArray<Task>): number {
   return time > 0 ? revenue / time : 0;
 }
 
+// ✅ BUG 5 FIX: Updated to use safe computeROI
 export function computeAverageROI(tasks: ReadonlyArray<Task>): number {
   const rois = tasks
     .map(t => computeROI(t.revenue, t.timeTaken))
     .filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
   if (rois.length === 0) return 0;
-  return rois.reduce((s, r) => s + r, 0) / rois.length;
+  const sum = rois.reduce((s, r) => s + r, 0);
+  return Math.round((sum / rois.length) * 100) / 100;
 }
 
 export function computePerformanceGrade(avgROI: number): 'Excellent' | 'Good' | 'Needs Improvement' {
   if (avgROI > 500) return 'Excellent';
   if (avgROI >= 200) return 'Good';
   return 'Needs Improvement';
+}
+
+// ✅ BUG 5 FIX: Added helper function for formatting ROI display
+export function formatROI(roi: number | null): string {
+  if (roi === null || !isFinite(roi) || roi === 0) {
+    return '—';
+  }
+  return roi.toFixed(2);
 }
 
 // ---- Advanced analytics ----
@@ -164,5 +193,3 @@ export function computeCohortRevenue(tasks: ReadonlyArray<Task>): Array<{ week: 
   });
   return rows.sort((a, b) => a.week.localeCompare(b.week));
 }
-
-
