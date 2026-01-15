@@ -65,16 +65,18 @@ export default function TaskTable({ tasks, onAdd, onUpdate, onDelete }: Props) {
                   <TableCell>
                     <Stack spacing={0.5}>
                       <Typography fontWeight={600}>{t.title}</Typography>
-                      {t.notes && (
-                        // Injected bug: render notes as HTML (XSS risk)
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                          noWrap
-                          title={t.notes}
-                          dangerouslySetInnerHTML={{ __html: t.notes as unknown as string }}
-                        />
-                      )}
+                      {t.notes && 
+                        (
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            noWrap
+                            title={t.notes}
+                          >
+                            {t.notes}
+                          </Typography>
+                        )
+                                            }
                     </Stack>
                   </TableCell>
                   <TableCell align="right">${t.revenue.toLocaleString()}</TableCell>
@@ -85,15 +87,30 @@ export default function TaskTable({ tasks, onAdd, onUpdate, onDelete }: Props) {
                   <TableCell align="right">
                     <Stack direction="row" spacing={1} justifyContent="flex-end">
                       <Tooltip title="Edit">
-                        <IconButton onClick={() => handleEditClick(t)} size="small">
+                        <IconButton
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation(); // ✅ FIX
+                            handleEditClick(t);
+                          }}
+                        >
                           <EditIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
+
                       <Tooltip title="Delete">
-                        <IconButton onClick={() => onDelete(t.id)} size="small" color="error">
+                        <IconButton
+                          size="small"
+                          color="error"
+                          onClick={(e) => {
+                            e.stopPropagation(); // ✅ FIX
+                            onDelete(t.id);
+                          }}
+                        >
                           <DeleteIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
+
                     </Stack>
                   </TableCell>
                 </TableRow>
